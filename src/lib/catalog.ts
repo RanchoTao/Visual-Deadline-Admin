@@ -52,7 +52,7 @@ export const columns: Partial<Record<Resource, [string, string][]>> = {
   entitlements: [
     ["email", "邮箱"],
     ["source", "授权来源"],
-    ["effectivePlus", "VD Plus 生效"],
+    ["effectiveTier", "最终有效层级"],
     ["validUntil", "有效截止"],
     ["status", "状态"],
     ["reason", "原因"],

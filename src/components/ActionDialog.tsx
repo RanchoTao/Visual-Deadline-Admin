@@ -24,6 +24,9 @@ export default function ActionDialog({
   const [target, setTarget] = useState(spec.target ?? "");
   const [input, setInput] = useState<Record<string, unknown>>({
     ...(spec.resource === "bans" ? { reasonCode: "manual" } : {}),
+    ...(spec.resource === "entitlements" && spec.action === "grant"
+      ? { tier: "plus", source: "admin_grant" }
+      : {}),
     ...spec.input,
   });
   const [step, setStep] = useState(0);
@@ -82,6 +85,10 @@ export default function ActionDialog({
       const result = await response.json();
       if (response.status === 401) {
         window.location.assign("/login");
+        return;
+      }
+      if (result.code === "MFA_REQUIRED") {
+        window.location.assign("/mfa");
         return;
       }
       if (!response.ok)

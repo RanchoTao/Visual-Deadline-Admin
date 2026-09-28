@@ -12,6 +12,8 @@ const forbidden = [
   "DEEPSEEK_API_KEY",
   "fixture-internal-token",
   "fixture-owner-session",
+  "FIXTURE_TOTP_SECRET_SENTINEL",
+  "FIXTURE_REFRESH_SECRET_SENTINEL",
 ];
 let scanned = 0;
 async function scan(directory) {

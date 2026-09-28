@@ -225,6 +225,94 @@ try {
     (await call("/api/admin/users")).status === 401,
     "logged out requests denied",
   );
+  const mfaLogin = await call("/api/auth/login", "POST", {
+    email: fixtureActor.email,
+    password: "fixture-password",
+  });
+  cookie = mfaLogin.headers.get("set-cookie").split(";")[0];
+  check((await call("/mfa")).status === 200, "owner enrollment page available");
+  check(
+    (
+      await call(
+        "/api/auth/mfa",
+        "POST",
+        { action: "enroll" },
+        { Origin: "https://attacker.test" },
+      )
+    ).status === 403,
+    "MFA cross-site request rejected",
+  );
+  const enrollment = await call("/api/auth/mfa", "POST", { action: "enroll" });
+  check(
+    enrollment.ok &&
+      enrollment.headers.get("cache-control").includes("no-store"),
+    "enrollment not cached",
+  );
+  const factor = await enrollment.json();
+  check(
+    factor.secret === "FIXTURE_TOTP_SECRET_SENTINEL",
+    "enrollment secret only in explicit response",
+  );
+  check(
+    !(await (await call("/mfa")).text()).includes(factor.secret),
+    "secret absent from server HTML",
+  );
+  check(
+    (
+      await call("/api/auth/mfa", "POST", {
+        action: "verify",
+        factorId: factor.factorId,
+        code: "000000",
+      })
+    ).status === 400,
+    "incorrect TOTP rejected",
+  );
+  const verified = await call("/api/auth/mfa", "POST", {
+    action: "verify",
+    factorId: factor.factorId,
+    code: "123456",
+  });
+  check(verified.ok, "TOTP verification accepted");
+  check(
+    !(await verified.text()).includes("SECRET_SENTINEL"),
+    "verification returns no secrets",
+  );
+  cookie = verified.headers.get("set-cookie").split(";")[0];
+  check((await call("/dashboard")).status === 200, "console after AAL2");
+  check(
+    (await call("/api/auth/mfa", "POST", { action: "enroll" })).status === 409,
+    "existing factor cannot be replaced",
+  );
+  await call("/api/auth/logout", "POST");
+  check(
+    (await call("/api/admin/users")).status === 401,
+    "revoked session rejected",
+  );
+  const challengeLogin = await call("/api/auth/login", "POST", {
+    email: fixtureActor.email,
+    password: "fixture-password",
+  });
+  cookie = challengeLogin.headers.get("set-cookie").split(";")[0];
+  check(
+    (await challengeLogin.json()).destination === "/mfa",
+    "password login with factor routes to challenge",
+  );
+  check((await call("/mfa")).status === 200, "challenge page available");
+  check(
+    (
+      await call("/api/admin/entitlements", "POST", {
+        ...base,
+        action: "grant",
+        input: { tier: "pro" },
+      })
+    ).status === 403,
+    "Pro denied without authority",
+  );
+  check(
+    !logs.includes("FIXTURE_TOTP_SECRET_SENTINEL") &&
+      !logs.includes("FIXTURE_REFRESH_SECRET_SENTINEL"),
+    "MFA secrets absent from server logs",
+  );
   console.log(
     `HTTP contract checks passed: ${checks}. Test fixtures only; no live provider or database calls.`,
   );

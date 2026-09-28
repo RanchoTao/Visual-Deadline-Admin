@@ -1,3 +1,16 @@
+export type MembershipTier = "free" | "plus" | "pro";
+export type PremiumCapability = "vd.plus" | "vd.pro";
+export type EntitlementSourceCategory =
+  | "subscription"
+  | "beta_gift"
+  | "admin_grant"
+  | "admin_compensation"
+  | "promotion"
+  | "testing";
+export interface AdminGrantSupport {
+  contract: "vd-admin-tiers-v1";
+  grantableTiers: Exclude<MembershipTier, "free">[];
+}
 export type AdminRole = "owner" | "admin" | "support" | "analyst" | "reviewer";
 export type Permission =
   | "dashboard.read"

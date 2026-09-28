@@ -1,3 +1,4 @@
+import { effectiveTier, tierCapabilities, supportsProGrant } from "@/lib/tiers";
 import { columns, metrics } from "@/lib/catalog";
 import type { PageResult, Resource } from "@/lib/contracts";
 import { GatewayError } from "./gateway-core";
@@ -13,6 +14,9 @@ const detailFields = [
   "inviteSource",
   "membershipStatus",
   "effectivePlus",
+  "effectiveTier",
+  "currentTier",
+  "validFrom",
   "validUntil",
   "entitlementSources",
   "subscriptionId",
@@ -45,6 +49,9 @@ const snapshotFields = [
   "source",
   "reason",
   "effectivePlus",
+  "effectiveTier",
+  "currentTier",
+  "validFrom",
   "code",
   "kind",
 ];
@@ -74,13 +81,28 @@ export function projectRead(
     "id",
     "userId",
     ...(columns[resource] ?? []).map(([key]) => key),
-    ...(resource === "users" ? detailFields : []),
+    ...(resource === "users"
+      ? detailFields
+      : resource === "entitlements"
+        ? [
+            "effectivePlus",
+            "effectiveTier",
+            "currentTier",
+            "validFrom",
+            "entitlementSources",
+            "adminGrants",
+            "subscriptionId",
+          ]
+        : []),
     ...(resource === "beta-applications"
       ? ["reviewNote", "history", "submittedFields"]
       : []),
   ]);
-  const items = result.items.map((row) =>
-    Object.fromEntries(
+  const items = result.items.map((original) => {
+    const row = ["users", "entitlements"].includes(resource)
+      ? { ...original, effectiveTier: effectiveTier(original) }
+      : original;
+    return Object.fromEntries(
       Object.entries(row)
         .filter(([key]) => keys.has(key))
         .map(([key, value]) => [
@@ -97,6 +119,8 @@ export function projectRead(
               ? safeStructured(value, [
                   "id",
                   "source",
+                  "tier",
+                  "validFrom",
                   "status",
                   "validUntil",
                   "reason",
@@ -110,8 +134,11 @@ export function projectRead(
                 ])
               : scalar(value),
         ]),
-    ),
-  );
+    );
+  });
+  if (["users", "entitlements"].includes(resource))
+    for (const row of items)
+      row.capabilities = tierCapabilities(effectiveTier(row));
   const summaryKeys = new Set([
     ...metrics.flatMap((group) => group.fields.map(([key]) => key)),
     ...[
@@ -133,11 +160,14 @@ export function projectRead(
         ? result.nextCursor.slice(0, 256)
         : undefined,
     summary: result.summary
-      ? Object.fromEntries(
-          Object.entries(result.summary)
-            .filter(([key]) => summaryKeys.has(key))
-            .map(([key, value]) => [key, scalar(value)]),
-        )
+      ? {
+          ...Object.fromEntries(
+            Object.entries(result.summary)
+              .filter(([key]) => summaryKeys.has(key))
+              .map(([key, value]) => [key, scalar(value)]),
+          ),
+          proGrantSupported: supportsProGrant(result.summary.adminGrantSupport),
+        }
       : undefined,
   };
 }
@@ -153,6 +183,9 @@ export function projectMutationResult(
     "queuedEmailId",
     "grantId",
     "effectivePlus",
+    "effectiveTier",
+    "currentTier",
+    "validFrom",
     "validUntil",
     "policy",
     "limit",

@@ -6,6 +6,13 @@ export const fixtureActor = {
   email_confirmed_at: "2026-09-28T00:00:00Z",
 };
 export function startFixture(port = 3301) {
+  const factors = [];
+  const sessions = new Map();
+  function issue(aal = "aal1") {
+    const token = `fixture.${Buffer.from(JSON.stringify({ sub: fixtureActor.id, exp: Math.floor(Date.now() / 1000) + 3600, aal, jti: crypto.randomUUID() })).toString("base64url")}.signature`;
+    sessions.set(token, aal);
+    return token;
+  }
   const audit = [];
   const commands = [];
   const user = {
@@ -47,20 +54,55 @@ export function startFixture(port = 3301) {
       return json({
         access_token:
           input.email === fixtureActor.email
-            ? "fixture-owner-session"
+            ? issue()
             : "fixture-intruder-session",
         expires_in: 3600,
       });
     }
+    const bearer = request.headers.authorization?.replace(/^Bearer /, "");
     if (url.pathname === "/auth/v1/user")
-      return request.headers.authorization === "Bearer fixture-owner-session"
-        ? json(fixtureActor)
-        : json({
-            ...fixtureActor,
-            id: "intruder",
-            user_metadata: { role: "owner" },
-          });
-    if (url.pathname === "/auth/v1/logout") return json({});
+      return sessions.has(bearer)
+        ? json({ ...fixtureActor, factors })
+        : json({}, 401);
+    if (url.pathname === "/auth/v1/logout") {
+      sessions.delete(bearer);
+      return json({});
+    }
+    if (url.pathname.startsWith("/auth/v1/factors")) {
+      if (!sessions.has(bearer)) return json({}, 401);
+      if (url.pathname === "/auth/v1/factors") {
+        const factor = {
+          id: crypto.randomUUID(),
+          factor_type: "totp",
+          status: "unverified",
+        };
+        factors.push(factor);
+        return json({
+          id: factor.id,
+          totp: {
+            secret: "FIXTURE_TOTP_SECRET_SENTINEL",
+            qr_code:
+              '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><text x="10" y="100">Local fixture only</text></svg>',
+          },
+        });
+      }
+      const factor = factors.find((f) => f.id === url.pathname.split("/")[4]);
+      if (!factor) return json({}, 404);
+      if (url.pathname.endsWith("/challenge")) {
+        factor.challenge = crypto.randomUUID();
+        return json({ id: factor.challenge });
+      }
+      const input = JSON.parse(raw);
+      if (input.code !== "123456" || input.challenge_id !== factor.challenge)
+        return json({}, 400);
+      delete factor.challenge;
+      factor.status = "verified";
+      return json({
+        access_token: issue("aal2"),
+        refresh_token: "FIXTURE_REFRESH_SECRET_SENTINEL",
+        expires_in: 3600,
+      });
+    }
     if (
       request.headers.authorization !== "Bearer fixture-internal-token" ||
       request.headers["x-admin-actor"] !== fixtureActor.id

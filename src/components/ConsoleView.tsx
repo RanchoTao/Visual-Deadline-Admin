@@ -153,6 +153,10 @@ export default function ConsoleView({
           window.location.assign("/login");
           return;
         }
+        if (result.code === "MFA_REQUIRED") {
+          window.location.assign("/mfa");
+          return;
+        }
         if (!response.ok) {
           if (result.code === "CONTRACT_PENDING") {
             if (active) {
@@ -192,7 +196,10 @@ export default function ConsoleView({
             : "secondary"
         }
         disabled={
-          !configured || !canMutate(actor.role, spec.resource, spec.action)
+          !configured ||
+          !canMutate(actor.role, spec.resource, spec.action) ||
+          (spec.input?.tier === "pro" &&
+            data.summary?.proGrantSupported !== true)
         }
         onClick={() => setDialog(spec)}
       >
@@ -502,7 +509,8 @@ export default function ConsoleView({
             <span className="subtle-chip">VD 权威计算</span>
           </div>
           {detailGrid(row, [
-            ["effectivePlus", "VD Plus 生效"],
+            ["currentTier", "当前套餐"],
+            ["effectiveTier", "最终有效层级"],
             ["validUntil", "有效截止"],
             ["entitlementSources", "授权来源"],
             ["subscriptionId", "Paddle 订阅"],
@@ -516,24 +524,34 @@ export default function ConsoleView({
                   action: "grant",
                   label: `+${days} 天`,
                   target: detailId,
-                  input: { days, source: "admin_grant" },
+                  input: { days, tier: "plus", source: "admin_grant" },
                 })}
               </span>
             ))}
             {action({
               resource: "entitlements",
               action: "grant",
-              label: "自定义截止时间",
+              label: "赠送 Plus",
               target: detailId,
-              input: { source: "admin_grant" },
+              input: { tier: "plus", source: "admin_grant" },
             })}
             {action({
               resource: "entitlements",
               action: "grant",
               label: "永久测试权限",
               target: detailId,
-              input: { permanent: true, source: "testing" },
+              input: { permanent: true, tier: "plus", source: "testing" },
             })}
+            {action({
+              resource: "entitlements",
+              action: "grant",
+              label: "赠送 Pro",
+              target: detailId,
+              input: { tier: "pro", source: "admin_grant" },
+            })}
+            {data.summary?.proGrantSupported !== true && (
+              <span className="muted">Pro 授权待 VD 权威接口支持</span>
+            )}
             {action({
               resource: "entitlements",
               action: "revoke",
@@ -931,7 +949,7 @@ export default function ConsoleView({
           {section === "entitlements" && (
             <div className="notice compact">
               {tab === "quotas"
-                ? "Free、Plus 与未来策略均由 VD 管理。个人覆盖与 Paddle 订阅解耦。"
+                ? "Free、Plus、Pro 与独立额度策略均由 VD 管理。个人覆盖与 Paddle 订阅解耦。"
                 : "授权来源独立展示：Paddle 订阅、历史会员、内测赠送、管理员补偿、推广和测试。手动赠送不会修改 Paddle 订阅周期。"}
             </div>
           )}

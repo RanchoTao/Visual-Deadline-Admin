@@ -9,7 +9,7 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "tsx --test tests/*.test.ts",
     "test:http": "node scripts/http-check.mjs",
-    "test:production": "node scripts/production-check.mjs",
+    "test:production": "node scripts/production-check.mjs && node scripts/production-mfa-check.mjs",
     "check:client": "node scripts/check-client-boundary.mjs"
   },
   "dependencies": {

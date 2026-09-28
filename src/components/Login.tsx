@@ -20,7 +20,9 @@ export default function Login({ configured }: { configured: boolean }) {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message);
-      window.location.assign("/dashboard");
+      window.location.assign(
+        data.destination === "/mfa" ? "/mfa" : "/dashboard",
+      );
     } catch (error) {
       setError(error instanceof Error ? error.message : "登录暂时不可用。");
       setBusy(false);
@@ -68,7 +70,12 @@ export default function Login({ configured }: { configured: boolean }) {
             <ShieldCheck size={25} />
           </div>
           <h2>登录运营控制台</h2>
-          <p className="muted">使用已授权的管理员账号继续。</p>
+          <p className="muted">生产访问需要双重验证。</p>
+          {process.env.NODE_ENV === "development" && (
+            <p className="notice">
+              仅本地开发：所有者可使用较弱的密码认证（AAL1）。
+            </p>
+          )}
           {!configured && (
             <div className="notice">
               <strong>管理员认证尚未配置</strong>

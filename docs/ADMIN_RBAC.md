@@ -13,3 +13,7 @@
 Admin-1 仅开放 owner 登录，绑定来自部署端 UUID 白名单。其他角色的登录绑定等待 VD 提供不可由用户编辑、可即时撤销的运营角色目录。不得从邮箱后缀、前端按钮状态、query、request body 或用户 metadata 推断角色。
 
 后续接入角色目录时应替换 `ownerFromVerifiedUser` 的绑定来源，保留服务端权限检查，并在每次请求验证绑定。后端仍需验证内部调用者、actor 及相应业务对象权限；Admin 头部不是公开 API 可直接信任的身份声明。
+
+Admin-1 仍是经过合约测试的控制台，尚未启用任何生产运营写入。下一项必需依赖是 VD 权威管理 API。目标套餐模型为 Free / Plus / Pro；生产 Admin 强制 Supabase TOTP MFA / AAL2。
+
+角色权限检查之前先执行生产 AAL2 门禁。MFA 未完成的所有者只能使用认证与 MFA 流程，不能读取运营元数据或调用运营命令。Free / Plus / Pro 是用户产品权益，不能提升运营角色；Pro 授权能力也不能由请求 body、user_metadata 或前端按钮状态开启。

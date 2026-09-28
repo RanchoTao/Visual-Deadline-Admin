@@ -1,3 +1,4 @@
+import type { MembershipTier, PremiumCapability } from "./contracts";
 // Proposed normalized DTOs. VD must approve and map these from its authoritative schema.
 export type AccountStatus = "normal" | "restricted" | "suspended" | "banned";
 export type ApplicationStatus =
@@ -11,6 +12,8 @@ export type ApplicationStatus =
 export interface EntitlementSource {
   id: string;
   source: string;
+  tier?: MembershipTier;
+  validFrom?: string | null;
   status: string;
   validUntil: string | null;
   reason: string | null;
@@ -25,7 +28,9 @@ export interface UserMetadata {
   inviteCode: string | null;
   inviteSource: string | null;
   membershipStatus: string;
-  effectivePlus: boolean;
+  effectiveTier: MembershipTier;
+  capabilities: PremiumCapability[];
+  effectivePlus?: boolean;
   validUntil: string | null;
   entitlementSources: EntitlementSource[];
   subscriptionId: string | null;

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { currentActor } from "@/server/auth";
+import { requireApiActor } from "@/server/auth";
 import { gateway } from "@/server/gateway";
 import { GatewayError } from "@/server/gateway-core";
 import { readOperation, writeOperation } from "@/server/operations";
@@ -38,7 +38,12 @@ export async function GET(request: Request, context: Context) {
     return NextResponse.json(
       projectRead(
         resource,
-        await readOperation(gateway(), await currentActor(), resource, query),
+        await readOperation(
+          gateway(),
+          await requireApiActor(),
+          resource,
+          query,
+        ),
       ),
     );
   } catch (error) {
@@ -67,7 +72,7 @@ export async function POST(request: Request, context: Context) {
     }
     const receipt = await writeOperation(
       gateway(),
-      await currentActor(),
+      await requireApiActor(),
       resource,
       body,
       requestId,
