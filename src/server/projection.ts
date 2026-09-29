@@ -89,6 +89,8 @@ export function projectRead(
             "effectiveTier",
             "currentTier",
             "validFrom",
+            "tier",
+            "grantId",
             "entitlementSources",
             "adminGrants",
             "subscriptionId",

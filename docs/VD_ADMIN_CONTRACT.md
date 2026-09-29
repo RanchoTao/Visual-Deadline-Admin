@@ -132,3 +132,10 @@ interface Membership {
 该声明是待 VD 实现的契约，**并不宣称 vd.pro 已存在于 VD 生产**。用户详情 / entitlement 读取 summary 可附带同样声明供 UI 展示（投影成 proGrantSupported）。缺失、版本不符或不含 pro 时 UI 禁用赠送 Pro。每次 Pro POST 都重新读取 settings 验证；不信任客户端声明，读取失败即拒绝。VD 必须在原子执行命令时再次检查支持，处理能力撤回与并发竞争。
 
 grant 只接受 tier、days、validUntil、permanent、source；revoke 只接受 grantId（省略时撤销该用户管理员授权）。拒绝 subscriptionId、任意 capabilities 及 subscription 来源的授权命令。省略 tier 的旧请求仍按 Plus 合约转发。独立赠送 / 撤销不得写 Paddle 订阅、取消续费或调整账期；后端须验证 grantId 属于独立管理员授权，并用数据库测试证明订阅记录未改变。
+
+
+## PR140 source-list compatibility
+
+The VD entitlements list returns one entitlement/source record with its own `id`, `userId`, tier/source/status/validity/reason and effective tier. An optional `grantId` identifies only an independent administrator grant; the UI offers revocation only when that authoritative ID exists. Subscription records have no administrator revocation action. User detail remains aggregated and its existing grant controls remain supported.
+
+Ordinary invitation lists contain masked codes. The console labels these as `脱敏码不可复制`; full codes are displayed only in the successful creation or matching original idempotent receipt. No production configuration, deployment or subscription edit is enabled by this compatible change.

@@ -37,3 +37,10 @@ fixture 验证固定的合成测试验证码，不生成或验证真实 TOTP；�
 MFA 注册响应为 no-store；SSR HTML、验证响应、客户端产物和运行日志中无密钥 sentinel。源码回归禁止客户端 console、浏览器存储和 SVG DOM 注入。测试截图只保留挑战页，不保存注册二维码或密钥。
 
 ![MFA 挑战页（本地合约测试）](screenshots/mfa-challenge.png)
+
+
+## PR140 source-list compatibility
+
+The VD entitlements list returns one entitlement/source record with its own `id`, `userId`, tier/source/status/validity/reason and effective tier. An optional `grantId` identifies only an independent administrator grant; the UI offers revocation only when that authoritative ID exists. Subscription records have no administrator revocation action. User detail remains aggregated and its existing grant controls remain supported.
+
+Ordinary invitation lists contain masked codes. The console labels these as `脱敏码不可复制`; full codes are displayed only in the successful creation or matching original idempotent receipt. No production configuration, deployment or subscription edit is enabled by this compatible change.

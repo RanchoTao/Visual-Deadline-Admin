@@ -246,3 +246,28 @@ test("MFA client does not persist or log secrets, and server errors are generic"
   assert.doesNotMatch(route, /console\.|refresh_token/);
   assert.match(route, /no-store/);
 });
+
+test("masked invitations cannot be copied; source rows preserve owned grant identity", () => {
+  assert.equal(JSON.parse(readFileSync("vercel.json", "utf8")).git.deploymentEnabled["codex/admin-foundation"], false);
+  const ui = readFileSync("src/components/ConsoleView.tsx", "utf8");
+  assert.ok(!ui.includes("navigator.clipboard.writeText"));
+  assert.ok(ui.includes("脱敏码不可复制"));
+  assert.ok(ui.includes("grantId: selected.grantId"));
+  const row = {
+    id: "entitlement-id",
+    userId: "user-id",
+    grantId: "grant-id",
+    email: "owner@example.test",
+    tier: "pro",
+    source: "admin_grant",
+    effectiveTier: "pro",
+    validFrom: "2026-09-29",
+    validUntil: "2026-10-29",
+    status: "active",
+    reason: "approved",
+  };
+  const projected = projectRead("entitlements", { items: [row] }).items[0];
+  assert.equal(projected.userId, row.userId);
+  assert.equal(projected.grantId, row.grantId);
+  assert.equal(projected.tier, "pro");
+});

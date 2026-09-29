@@ -61,3 +61,10 @@ git diff --check
 发布前需在 VD 侧实现管理契约并验收原子审计、幂等、权限与数据投影。GitHub PR 不会自动合并；此项目不会自动部署或修改 Visual Deadline 产品仓库。
 
 仅 `NODE_ENV=development` 允许所有者 AAL1，登录页明确标注较弱认证。生产无绕过开关。Free 无 premium 能力，Plus 对应 vd.plus，Pro 对应 vd.pro 并包含 vd.plus。Pro 按钮在权威能力声明缺失时禁用，服务端也拒绝请求；这不表示 VD 生产已支持 Pro。
+
+
+## PR140 source-list compatibility
+
+The VD entitlements list returns one entitlement/source record with its own `id`, `userId`, tier/source/status/validity/reason and effective tier. An optional `grantId` identifies only an independent administrator grant; the UI offers revocation only when that authoritative ID exists. Subscription records have no administrator revocation action. User detail remains aggregated and its existing grant controls remain supported.
+
+Ordinary invitation lists contain masked codes. The console labels these as `脱敏码不可复制`; full codes are displayed only in the successful creation or matching original idempotent receipt. No production configuration, deployment or subscription edit is enabled by this compatible change.

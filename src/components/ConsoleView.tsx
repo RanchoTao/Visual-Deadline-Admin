@@ -11,7 +11,6 @@ import {
   Database,
   Link2,
   ChevronRight,
-  Copy,
   Inbox,
   Activity,
   ArrowRight,
@@ -135,7 +134,6 @@ export default function ConsoleView({
     null,
   );
   const [template, setTemplate] = useState<EmailTemplate>("invitation");
-  const [copied, setCopied] = useState("");
   useEffect(() => {
     let active = true;
     setLoading(true);
@@ -293,18 +291,12 @@ export default function ConsoleView({
                         </Link>
                       ) : resource === "invitations" ? (
                         <div className="row-actions">
-                          <button
-                            className="text-link"
-                            onClick={async () => {
-                              await navigator.clipboard.writeText(
-                                String(row.code),
-                              );
-                              setCopied(String(row.id));
-                            }}
+                          <span
+                            className="muted"
+                            title="完整邀请码仅在创建成功或原请求重试回执中显示。"
                           >
-                            <Copy size={13} />
-                            {copied === row.id ? "已复制" : "复制"}
-                          </button>
+                            脱敏码不可复制
+                          </span>
                           <button
                             className="text-link"
                             onClick={() => setSelected(row)}
@@ -755,12 +747,13 @@ export default function ConsoleView({
             </>
           )}
           {tab === "entitlements" &&
+            typeof selected.grantId === "string" &&
             action({
               resource: tab,
               action: "revoke",
               label: "撤销管理员授权",
               target,
-              input: { grantId: selected.id },
+              input: { grantId: selected.grantId },
             })}
           {tab === "quotas" &&
             action({
