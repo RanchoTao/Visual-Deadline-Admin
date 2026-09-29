@@ -1,0 +1,13 @@
+import { currentActor, currentOwnerSession } from "@/server/auth";
+import { redirect } from "next/navigation";
+import Shell from "@/components/Shell";
+export const dynamic = "force-dynamic";
+export default async function ConsoleLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const actor = await currentActor();
+  if (!actor) redirect((await currentOwnerSession()) ? "/mfa" : "/login");
+  return <Shell actor={actor}>{children}</Shell>;
+}
